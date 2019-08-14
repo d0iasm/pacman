@@ -62,47 +62,38 @@ def vectorize(tokens):
     return vec
 
 
-def result(y, threshold):
-    # XSS is 1 and normal is 0.
-    print('RESULT: prediction sum(), length of prediction, threshold')
-    print(y.sum())
-    print(len(y))
-    print(threshold)
-    print('-----------------------')
-    return 1 if y.sum()/len(y) >= threshold else 0
-
-
 def run():
+    """
+    データ作成
+    """
+    xss_train_data, xss_train_label = data_loader(XSS_TRAIN_FILE, 'xss')
+    xss_test_data, xss_test_label = data_loader(XSS_TEST_FILE, 'xss')
+    normal_train_data, normal_train_label = data_loader(NORMAL_TRAIN_FILE, 'normal')
+    normal_test_data, normal_test_label = data_loader(NORMAL_TEST_FILE, 'normal')
 
-    normal_data, normal_label = data_loader(NORMAL_TRAIN_FILE, 'normal')
-    xss_data, xss_label = data_loader(XSS_TRAIN_FILE, 'xss')
-    training_data = [normal_data, xss_data]
-    vec = vectorize(training_data)
-
-    threshold = len(xss_data) / (len(xss_data) + len(normal_data))
+    """
+    データ前処理・学習機作成
+    """
+    # NOTE: The argument of vectorize() must be a 2d array.
+    vec = vectorize([xss_train_data, normal_train_data])
 
     X_train = [n for _, n in vec]
-    print('-------')
-    print("Training:", len(X_train), X_train)
-    print("  vector: ", vec)
-    print('-------')
     X_train = np.array(X_train).reshape(-1, 1)
 
-    y_train = normal_label + xss_label
+    y_train = xss_train_label + normal_train_label
+    X_test = xss_test_data + normal_test_data
+    y_test = xss_test_label + normal_test_label
 
     model = GaussianNB()
     model.fit(X_train, y_train)
 
-    # Test with the X_train data.
-    print(model.score(X_train, y_train))
-
-    # Test
-    xss_test_data, xss_test_label = data_loader(XSS_TEST_FILE, 'xss')
-    normal_test_data, normal_test_label = data_loader(NORMAL_TEST_FILE, 'normal')
-    y_test = xss_test_label + normal_test_label
-
-    X_test = vectorize(training_data + xss_test_data)
-    X_test = np.array([n for _, n in X_test], dtype=object).reshape(-1, 1)
+    """
+    テスト
+    """
+    # NOTE: The argument of vectorize() must be a 2d array.
+    X_test = vectorize([X_test])
+    X_test = np.array([n for _, n in X_test], dtype=object)
+    X_test = X_test.reshape(-1, 1)
     pred = model.predict(X_test)
     acc_score = accuracy_score(y_test, pred)
     conf_mat = confusion_matrix(
