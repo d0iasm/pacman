@@ -3,7 +3,7 @@ import collections
 import math
 import numpy as np
 import pandas as pd
-from sklearn.naive_bayes import GaussianNB, ComplementNB
+from sklearn.naive_bayes import GaussianNB, BernoulliNB, MultinomialNB, ComplementNB
 from sklearn.model_selection import KFold
 from sklearn.metrics import accuracy_score, confusion_matrix
 
@@ -13,7 +13,10 @@ XSS_TEST_FILE = 'dataset/test_level_1.csv'
 NORMAL_TRAIN_FILE = 'dataset/normal.csv'
 NORMAL_TEST_FILE = 'dataset/normal.csv'
 
-STOP_WORDS = ['']
+XSS_TRAIN_FILE_2 = 'dataset/train_level_2.csv'
+XSS_TEST_FILE_2 = 'dataset/test_level_2.csv'
+
+STOP_WORDS = [';']
 
 keys = []
 test_src = ""
@@ -29,10 +32,10 @@ def data_loader(src, label):
 
 
 def clean(t):
-    t = t.replace("</", " ")
-    t = t.replace("<", " ")
-    t = t.replace(">", " ")
-    t = t.replace("=", " ")
+    target = ["</", "/>", "<", ">", "=", ":", "/", "(", ")", "[", "]", "{", "}", "＜", "＞"]
+    #target = ["</", "<", ">", "=",]
+    for ch in target:
+        t = t.replace(ch, " ")
     t = t.replace("\'", "")
     t = t.replace("\"", "")
     return t
@@ -53,6 +56,10 @@ def vectorize(tokens):
     # Calculate TF-IDF.
     for i, t in enumerate(tokens):
         for term in t:
+            if term in STOP_WORDS:
+                vec.append([term, 0])
+                continue
+
             # TF(ti, dj) = (The count ti in dj) / (The total count ti in all documents)
             tf = dicts[i][term] / sum([d[term] for d in dicts])
 
@@ -69,35 +76,47 @@ def run():
     """
     # Level 1
     xss_train_data, xss_train_label = data_loader(XSS_TRAIN_FILE, 'xss')
-    xss_test_data, xss_test_label = data_loader(XSS_TEST_FILE, 'xss')
+    #xss_test_data, xss_test_label = data_loader(XSS_TEST_FILE, 'xss')
     normal_train_data, normal_train_label = data_loader(NORMAL_TRAIN_FILE, 'normal')
     normal_test_data, normal_test_label = data_loader(NORMAL_TEST_FILE, 'normal')
 
+    # Level 2
+    xss_train_data_2, xss_train_label_2 = data_loader(XSS_TRAIN_FILE_2, 'xss')
+    xss_test_data_2, xss_test_label_2 = data_loader(XSS_TEST_FILE_2, 'xss')
 
     """
     データ前処理・学習機作成
     """
     # NOTE: The argument of vectorize() must be a 2d array.
-    vec = vectorize([xss_train_data, normal_train_data])
+    vec = vectorize([xss_train_data, normal_train_data, xss_train_data_2])
+    #vec = vectorize([xss_train_data_2, normal_train_data])
+
+    data = []
 
     X_train = [n for _, n in vec]
     X_train = np.array(X_train).reshape(-1, 1)
 
-    y_train = xss_train_label + normal_train_label
-    X_test = xss_test_data + normal_test_data
-    y_test = xss_test_label + normal_test_label
+    y_train = xss_train_label + normal_train_label + xss_train_label_2
+    #y_train = xss_train_label_2 + normal_train_label
+    X_test = xss_test_data_2 + normal_test_data
+    y_test = xss_test_label_2 + normal_test_label
+    #print(y_test)
 
-    model = GaussianNB()
+    #model = BernoulliNB()
+    #model = GaussianNB()
+    model = MultinomialNB()
+    #model = ComplementNB()
     model.fit(X_train, y_train)
 
     """
     テスト
     """
     # NOTE: The argument of vectorize() must be a 2d array.
-    X_test = vectorize([xss_test_data, normal_test_data])
+    X_test = vectorize([xss_test_data_2, normal_test_data])
     X_test = np.array([n for _, n in X_test], dtype=object)
     X_test = X_test.reshape(-1, 1)
     pred = model.predict(X_test)
+    #print(pred)
     acc_score = accuracy_score(y_test, pred)
     conf_mat = confusion_matrix(
         pred, y_test, labels=['xss', 'normal']
