@@ -7,11 +7,12 @@ from sklearn.naive_bayes import GaussianNB, ComplementNB
 from sklearn.model_selection import KFold
 from sklearn.metrics import accuracy_score, confusion_matrix
 
-
+# Level 1
 XSS_TRAIN_FILE = 'dataset/train_level_1.csv'
 XSS_TEST_FILE = 'dataset/test_level_1.csv'
 NORMAL_TRAIN_FILE = 'dataset/normal.csv'
 NORMAL_TEST_FILE = 'dataset/normal.csv'
+
 STOP_WORDS = ['']
 
 keys = []
@@ -66,10 +67,12 @@ def run():
     """
     データ作成
     """
+    # Level 1
     xss_train_data, xss_train_label = data_loader(XSS_TRAIN_FILE, 'xss')
     xss_test_data, xss_test_label = data_loader(XSS_TEST_FILE, 'xss')
     normal_train_data, normal_train_label = data_loader(NORMAL_TRAIN_FILE, 'normal')
     normal_test_data, normal_test_label = data_loader(NORMAL_TEST_FILE, 'normal')
+
 
     """
     データ前処理・学習機作成
@@ -91,7 +94,7 @@ def run():
     テスト
     """
     # NOTE: The argument of vectorize() must be a 2d array.
-    X_test = vectorize([X_test])
+    X_test = vectorize([xss_test_data, normal_test_data])
     X_test = np.array([n for _, n in X_test], dtype=object)
     X_test = X_test.reshape(-1, 1)
     pred = model.predict(X_test)
