@@ -17,6 +17,7 @@ XSS_TRAIN_FILE_2 = 'dataset/train_level_2.csv'
 XSS_TEST_FILE_2 = 'dataset/test_level_2.csv'
 
 STOP_WORDS = [';']
+BLACK_LISTS = ["alert"]
 
 keys = []
 test_src = ""
@@ -33,7 +34,6 @@ def data_loader(src, label):
 
 def clean(t):
     target = ["</", "/>", "<", ">", "=", ":", "/", "(", ")", "[", "]", "{", "}", "＜", "＞"]
-    #target = ["</", "<", ">", "=",]
     for ch in target:
         t = t.replace(ch, " ")
     t = t.replace("\'", "")
@@ -65,8 +65,12 @@ def vectorize(tokens):
 
             # IDF(ti) = log(The number of documents / The number of documents that has ti)
             idf = math.log10(total / sum([1 if d[term] > 0 else 0 for d in dicts]) + 1)
-            vec.append([term, tf * idf])
 
+            if BLACK_LISTS[0] in term:
+                vec.append([term, tf * idf * 2])
+                continue
+
+            vec.append([term, tf * idf])
     return vec
 
 
