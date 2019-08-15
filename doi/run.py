@@ -47,14 +47,6 @@ def clean(t):
     return t
 
 
-def tokenize(text):
-    print(text)
-    new = []
-    for t in text():
-        new.append(t.clean())
-    return text
-
-
 def run():
     """
     データ作成
@@ -117,12 +109,6 @@ def run():
     print('=============')
     print(model.best_params_)
     print('=============')
-
-    #model = BernoulliNB()
-    #model = GaussianNB()
-    #model = MultinomialNB()
-    #model = ComplementNB()
-    #model.fit(X_train, y_train)
 
     """
     テスト
